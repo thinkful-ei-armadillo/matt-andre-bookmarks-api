@@ -12,10 +12,7 @@ const BookmarksService = require('./bookmarksService');
 const app = express();
 const router = express.Router();
 
-const db = knexFn({
-  client: 'pg',
-  connection: process.env.DB_URL,
-});
+
 
 const morganOption = (NODE_ENV === 'production')
   ? 'tiny'
@@ -53,7 +50,7 @@ app.use(function errorHandler(error, req, res, next) {
 
 router.route('/bookmarks')
   .get((req, res, next) => {
-    BookmarksService.getAll(db)
+    BookmarksService.getAll(req.app.get('db'))
       .then(result => {
         return res.json(result);
       })
@@ -69,7 +66,7 @@ router.route('/bookmarks')
       rating
     };
 
-    BookmarksService.insert(db, bookmark)
+    BookmarksService.insert(req.app.get('db'), bookmark)
       .then(result => {
         res.status(204).location(`http://localhost:8000/bookmarks/${result.id}`).end();
       });
@@ -78,7 +75,7 @@ router.route('/bookmarks')
 
 router.route('/bookmarks/:id')
   .get((req, res) => {
-    BookmarksService.getById(db, req.params.id)
+    BookmarksService.getById(req.app.get('db'), req.params.id)
       .then(result => {
         if (result[0]) {
           res.json(result[0]);
@@ -101,7 +98,7 @@ router.route('/bookmarks/:id')
       .catch(next)
   })
   .patch(express.json(),(req,res,next) => {
-    BookmarksService.getById(db, req.params.id)
+    BookmarksService.getById(req.app.get('db'), req.params.id)
       .then(results => {
   
         const {title: newTitle, description: newDes, url: newUrl, rating: newRating} = req.body;
@@ -113,7 +110,7 @@ router.route('/bookmarks/:id')
           rating: newRating || rating
         }
 
-        BookmarksService.update(db, req.params.id, bookmark)
+        BookmarksService.update(req.app.get('db'), req.params.id, bookmark)
         .then(results => {
           if(results > 0)
             res.status(204).end();

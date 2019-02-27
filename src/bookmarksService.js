@@ -20,7 +20,17 @@ const BookmarksService = {
       .then(rows => rows[0]);
   },
   // update
+  update(db, id, newBookmark){
+    return db('bookmarks')
+      .where({id})
+      .update(newBookmark)
+  },
   // delete
+  delete(db, id){
+    return db('bookmarks')
+      .where({id})
+      .delete()
+  }
 };
 
 module.exports = BookmarksService;

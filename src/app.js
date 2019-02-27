@@ -24,13 +24,15 @@ const morganOption = (NODE_ENV === 'production')
 app.use(morgan(morganOption));
 app.use(helmet());
 app.use(cors());
+
 app.use(router);
+
 
 app.use(function handleToken(req, res, next) {
   let authToken = req.get('Authorization').split(' ')[1];
   let apiKey = process.env.API_KEY;
 
-  if(authToken !== apiKey) {
+  if (authToken !== apiKey) {
     return res.status(401).send('Unauthorized');
   }
 
@@ -78,23 +80,51 @@ router.route('/bookmarks/:id')
   .get((req, res) => {
     BookmarksService.getById(db, req.params.id)
       .then(result => {
-        if(result[0]) {
+        if (result[0]) {
           res.json(result[0]);
         } else {
           res.status(404).send('Bookmark not found');
         }
       });
   })
-  .delete((req, res) => {
-    let index = bookmarks.findIndex(b => b.id === req.params.id);
+  .delete((req, res, next) => {
 
-    if(index !== -1) {
-      bookmarks.splice(index, 1);
+    BookmarksService.delete(req.app.get('db'), Number(req.params.id))
+      .then((results) => {
+        console.log('id:', typeof(req.params.id));
+        console.log('results:', results)
+        if (results > 0)
+          res.status(204).end()
+        else
+          res.status(404).send('Bookmark not found');
+      })
+      .catch(next)
+  })
+  .patch(express.json(),(req,res,next) => {
+    BookmarksService.getById(db, req.params.id)
+      .then(results => {
+  
+        const {title: newTitle, description: newDes, url: newUrl, rating: newRating} = req.body;
+        const {title, description, url, rating} = results;
+        const bookmark = {
+          title: newTitle || title,
+          description: newDes || description,
+          url: newUrl || url,
+          rating: newRating || rating
+        }
 
-      res.status(204).end();
-    } else {
-      res.status(404).send('Bookmark not found');
-    }
+        BookmarksService.update(db, req.params.id, bookmark)
+        .then(results => {
+          if(results > 0)
+            res.status(204).end();
+          else  
+            res(400).send('User error');
+        })
+        .catch(next)
+      })
+      .catch(next)
+
+   
   });
 
 module.exports = app;

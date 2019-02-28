@@ -38,10 +38,12 @@ app.use(function handleToken(req, res, next) {
 
 app.use(function errorHandler(error, req, res, next) {
   let response;
+  console.error('errorHandler:', error);
+
   if (NODE_ENV === 'production') {
     response = { error: { message: 'server error' } };
   } else {
-    console.error(error);
+    
     response = { message: error.message, error };
   }
   res.status(500).json(response);
@@ -50,7 +52,7 @@ app.use(function errorHandler(error, req, res, next) {
 
 router.route('/bookmarks')
   .get((req, res, next) => {
-    BookmarksService.getAll(req.app.get('db'))
+    return BookmarksService.getAll(req.app.get('db'))
       .then(result => {
         return res.json(result);
       })
@@ -115,7 +117,7 @@ router.route('/bookmarks/:id')
           if(results > 0)
             res.status(204).end();
           else  
-            res(400).send('User error');
+            res.status(400).send('User error');
         })
         .catch(next)
       })
